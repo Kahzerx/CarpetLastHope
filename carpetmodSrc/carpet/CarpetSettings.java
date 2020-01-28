@@ -69,6 +69,9 @@ public class CarpetSettings
     @Rule(desc = "convierte la arena en un recurso renovable si un anvil cae sobre cobblestone", category = {FEATURE, EXPERIMENTAL})
     public static boolean renewableSand = false;
 
+    @Rule(desc = "convierte la red sand en un recurso renovable si un anvil cae sobre terracotta naranja", category = {FEATURE, EXPERIMENTAL})
+    public static boolean renewableRedSand = false;
+
     @Rule(desc = "Enables /spawn command for spawn tracking", category = COMMANDS)
     public static boolean commandSpawn = true;
 
