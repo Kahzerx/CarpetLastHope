@@ -77,7 +77,7 @@
              if (!this.field_70170_p.field_72995_K)
              {
                  BlockPos blockpos1 = new BlockPos(this);
-@@ -168,6 +201,24 @@
+@@ -168,6 +201,29 @@
                      this.field_70179_y *= 0.699999988079071D;
                      this.field_70181_x *= -0.5D;
  
@@ -98,6 +98,11 @@
 +                            field_70170_p.func_175718_b(2001,blockpos1.func_177977_b(),Block.func_149682_b(Blocks.field_150403_cj));
 +                        }
 +                    }
++                    else if (block == Blocks.field_150467_bQ && CarpetSettings.renewableSand && this.field_70170_p.func_180495_p(new BlockPos(this.field_70165_t, this.field_70163_u - 0.6, this.field_70161_v)).func_177230_c() == Blocks.field_150347_e){
++                        field_70170_p.func_175655_b(blockpos1.func_177977_b(), false);
++                        field_70170_p.func_180501_a(blockpos1.func_177977_b(), Blocks.field_150354_m.func_176223_P(), 3);
++                    }
++
 +
                      if (iblockstate.func_177230_c() != Blocks.field_180384_M)
                      {

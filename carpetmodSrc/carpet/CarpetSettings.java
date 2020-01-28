@@ -66,6 +66,9 @@ public class CarpetSettings
     @Rule(desc = "Si una entidad muere sobre arena en llamas, la arena se convertira en soulsand", category = {FEATURE, EXPERIMENTAL})
     public static boolean mobInFireConvertsSandToSoulsand = false;
 
+    @Rule(desc = "convierte la arena en un recurso renovable si un anvil cae sobre cobblestone", category = {FEATURE, EXPERIMENTAL})
+    public static boolean renewableSand = false;
+
     @Rule(desc = "Enables /spawn command for spawn tracking", category = COMMANDS)
     public static boolean commandSpawn = true;
 
