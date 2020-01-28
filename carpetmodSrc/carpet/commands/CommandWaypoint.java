@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 public class CommandWaypoint extends CommandCarpetBase {
     public static final String USAGE = "/waypoint <add|remove|list> ...";
-    public static final String USAGE_ADD = "/waypoint add <name> [x y z] [dimension] [yaw pitch]";
+    public static final String USAGE_ADD = "/waypoint add <name> [x y z] [dimension](overworld/nether/end) [size](x/z rectangle, x square, r/-1 cylinder)";
     public static final String USAGE_LIST = "/waypoint list [<dimension>|<user>|all] [page]";
     public static final String USAGE_REMOVE = "/waypoint remove <waypoint>";
 
@@ -95,13 +95,15 @@ public class CommandWaypoint extends CommandCarpetBase {
         }
         double yaw = 0;
         double pitch = 0;
+        double rangeX = 100;
+        double rangeZ = 100;
         Entity senderEntity = sender.getCommandSenderEntity();
         if (senderEntity != null) {
             yaw = senderEntity.rotationYaw;
             pitch = senderEntity.rotationPitch;
         }
         if (args.length > 2) {
-            if (args.length < 5) throw new WrongUsageException(USAGE_ADD);
+            if (args.length < 4) throw new WrongUsageException(USAGE_ADD);
             x = parseCoordinate(x, args[2], true).getResult();
             y = parseCoordinate(y, args[3], 0, dimension.getHeight(), false).getResult();
             z = parseCoordinate(z, args[4], true).getResult();
@@ -109,14 +111,27 @@ public class CommandWaypoint extends CommandCarpetBase {
                 if (!validDimension) {
                     throw new CommandException("Invalid dimension");
                 }
-                if (args.length > 6) {
-                    if (args.length < 8) throw new WrongUsageException(USAGE_ADD);
-                    yaw = parseCoordinate(yaw, args[6], false).getResult();
-                    pitch = parseCoordinate(pitch, args[7], false).getResult();
+                if (args.length == 7) {
+                    if (args[6] == "/") args[6] = "100/100";
+                    String[] range_size = args[6].split("/");
+                    try
+                    {
+                        if (range_size.length == 1) {
+                            rangeX = Integer.parseInt(range_size[0]);
+                            rangeZ = Integer.parseInt(range_size[0]);
+                        } else if (range_size.length == 2) {
+                            rangeX = Integer.parseInt(range_size[0]);
+                            rangeZ = Integer.parseInt(range_size[1]);
+                        }
+                    }
+                    catch (NumberFormatException nfe)
+                    {
+                        throw new WrongUsageException("Range must be a number");
+                    }
                 }
             }
         }
-        Waypoint w = new Waypoint(dimension, name, sender.getName(), x, y, z, yaw, pitch);
+        Waypoint w = new Waypoint(dimension, name, sender.getName(), x, y, z, yaw, pitch, rangeX, rangeZ);
         dimension.waypoints.put(name, w);
         Messenger.m(sender, "w Waypoint ", "w " + w.getDimension().getName(), "g :", "y " + w.name + " ", Messenger.tp("c", w), "w  added");
     }

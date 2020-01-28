@@ -14,6 +14,8 @@ import net.minecraft.tileentity.TileEntitySkull;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
+import java.util.UUID;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.GameType;
 import net.minecraft.world.WorldServer;
 
@@ -34,6 +36,12 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         WorldServer worldIn = server.getWorld(dimension);
         PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
         GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
+        if (gameprofile == null) {
+            System.out.println("* GameProfile is null!");
+            UUID uuid = EntityPlayer.getUUID(new GameProfile((UUID)null, username));
+            gameprofile = new GameProfile(uuid, username);
+            System.out.println("* GameProfile is created as offline mode!");
+        }
         gameprofile = fixSkin(gameprofile);
         EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
         instance.setSetPosition(x, y, z, (float)yaw, (float)pitch);

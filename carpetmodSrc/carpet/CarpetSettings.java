@@ -57,6 +57,12 @@ public class CarpetSettings
      * Rules in this category should start with the "command" prefix
      */
 
+    @Rule(desc = "Activa /location para localizar jugadores y jugadores en zonas.", category = COMMANDS)
+    public static boolean commandLocation = true;
+
+    @Rule(desc = "Habilita /center para calcular ell centro de un perimetro desde 2 esquinas.", category = COMMANDS)
+    public static boolean commandCenter = false;
+
     @Rule(desc = "Enables /spawn command for spawn tracking", category = COMMANDS)
     public static boolean commandSpawn = true;
 

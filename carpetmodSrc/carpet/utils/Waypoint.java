@@ -1,5 +1,6 @@
 package carpet.utils;
 
+import carpet.helpers.ShapesHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -11,6 +12,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.SPacketRespawn;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -31,9 +33,11 @@ public class Waypoint implements Comparable<Waypoint> {
     public final double z;
     public final double yaw;
     public final double pitch;
+    public final double rangeX;
+    public final double rangeZ;
     public final @Nullable String creator;
 
-    public Waypoint(WorldServer world, String name, @Nullable String creator, double x, double y, double z, double yaw, double pitch) {
+    public Waypoint(WorldServer world, String name, @Nullable String creator, double x, double y, double z, double yaw, double pitch, double rangeX, double rangeZ) {
         this.world = world;
         this.creator = creator;
         this.name = name;
@@ -42,6 +46,8 @@ public class Waypoint implements Comparable<Waypoint> {
         this.z = z;
         this.yaw = yaw;
         this.pitch = pitch;
+        this.rangeX = rangeX;
+        this.rangeZ = rangeZ;
     }
 
     public DimensionType getDimension() {
@@ -51,6 +57,8 @@ public class Waypoint implements Comparable<Waypoint> {
     public String getFullName() {
         return getDimension().getName() + ":" + name;
     }
+
+    public BlockPos getPosition() { return new BlockPos(x, y, z); }
 
     @Override
     public boolean equals(Object obj) {
@@ -73,6 +81,29 @@ public class Waypoint implements Comparable<Waypoint> {
     @Override
     public String toString() {
         return String.format("Waypoint[%s,(%f,%f,%f),(%f, %f)", getFullName(), x, y, z, yaw, pitch);
+    }
+
+    public enum RANGE_ALGORITHM {AUTO, SQUARE, RECTANGLE, CYLINDRICAL, SPHERICAL, MANHATTAN};
+
+    public boolean inRange(RANGE_ALGORITHM range_algorithm, EntityPlayerMP player) {
+        if (range_algorithm == RANGE_ALGORITHM.AUTO) {
+            if (rangeX == rangeZ) range_algorithm = RANGE_ALGORITHM.SQUARE;
+            if (rangeX != rangeZ) range_algorithm = RANGE_ALGORITHM.RECTANGLE;
+            if (rangeZ == -1) range_algorithm = RANGE_ALGORITHM.CYLINDRICAL;
+        }
+        switch (range_algorithm) {
+            case SQUARE:
+                return ShapesHelper.inSquare(player.getPosition(), getPosition(), rangeX);
+            case RECTANGLE:
+                return ShapesHelper.inRectangle(player.getPosition(), getPosition(), new double[] { rangeX, rangeZ });
+            case MANHATTAN:
+                return DistanceCalculator.get_distance(DistanceCalculator.DISTANCE_ALGORITHM.MANHATTAN, DistanceCalculator.get_delta_position(player.getPosition(), getPosition())) <= rangeX;
+            case SPHERICAL:
+                return DistanceCalculator.get_distance(DistanceCalculator.DISTANCE_ALGORITHM.SPHERICAL, DistanceCalculator.get_delta_position(player.getPosition(), getPosition())) <= rangeX;
+            case CYLINDRICAL:
+                return DistanceCalculator.get_distance(DistanceCalculator.DISTANCE_ALGORITHM.CYLINDRICAL, DistanceCalculator.get_delta_position(player.getPosition(), getPosition())) <= rangeX;
+        }
+        return false;
     }
 
     public void teleport(Entity entity) {
@@ -212,6 +243,8 @@ public class Waypoint implements Comparable<Waypoint> {
                 out.name("yaw").value(w.yaw);
                 out.name("pitch").value(w.pitch);
                 out.name("creator").value(w.creator);
+                out.name("rangeX").value(w.rangeX);
+                out.name("rangeZ").value(w.rangeZ);
                 out.endObject();
             }
             out.endObject();
@@ -230,6 +263,8 @@ public class Waypoint implements Comparable<Waypoint> {
                 Double z = null;
                 double yaw = 0;
                 double pitch = 0;
+                double rangeX = 0;
+                double rangeZ = 0;
                 in.beginObject();
                 while (in.hasNext()) {
                     switch (in.nextName()) {
@@ -261,11 +296,19 @@ public class Waypoint implements Comparable<Waypoint> {
                             creator = in.nextString();
                             break;
                         }
+                        case "rangeX": {
+                            rangeX = in.nextDouble();
+                            break;
+                        }
+                        case "rangeZ": {
+                            rangeZ = in.nextDouble();
+                            break;
+                        }
                     }
                 }
                 in.endObject();
                 if (x != null && y != null && z != null) {
-                    waypoints.add(new Waypoint(world, name, creator, x, y, z, yaw, pitch));
+                    waypoints.add(new Waypoint(world, name, creator, x, y, z, yaw, pitch, rangeX, rangeZ));
                 }
             }
             in.endObject();

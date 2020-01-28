@@ -13,14 +13,29 @@ public class DistanceCalculator
 {
     public static final HashMap<EntityPlayer, BlockPos> dist_pos = new HashMap<>();
 
+    public static int[] get_delta_position(BlockPos pos1, BlockPos pos2) {
+        return new int[] {MathHelper.abs(pos1.getX()-pos2.getX()), MathHelper.abs(pos1.getY()-pos2.getY()), MathHelper.abs(pos1.getZ()-pos2.getZ())};
+    }
+
+    public static enum DISTANCE_ALGORITHM {MANHATTAN, SPHERICAL, CYLINDRICAL};
+
+    public static double get_distance(DISTANCE_ALGORITHM alg, int[] dp) {
+        if (alg == DISTANCE_ALGORITHM.MANHATTAN) {
+            return dp[0]+dp[1]+dp[2];
+        } else if (alg == DISTANCE_ALGORITHM.SPHERICAL) {
+            return MathHelper.sqrt(dp[0]*dp[0] + dp[1]*dp[1] + dp[2]*dp[2]);
+        } else if (alg == DISTANCE_ALGORITHM.CYLINDRICAL) {
+            return MathHelper.sqrt(dp[0]*dp[0] + dp[2]*dp[2]);
+        }
+        return -1;
+    }
+
     public static List<ITextComponent> print_distance_two_points(BlockPos pos1, BlockPos pos2)
     {
-        int dx = MathHelper.abs(pos1.getX()-pos2.getX());
-        int dy = MathHelper.abs(pos1.getY()-pos2.getY());
-        int dz = MathHelper.abs(pos1.getZ()-pos2.getZ());
-        int manhattan = dx+dy+dz;
-        double spherical = MathHelper.sqrt(dx*dx + dy*dy + dz*dz);
-        double cylindrical = MathHelper.sqrt(dx*dx + dz*dz);
+        int[] dp = get_delta_position(pos1, pos2);
+        int manhattan = (int)get_distance(DISTANCE_ALGORITHM.MANHATTAN, dp);
+        double spherical = get_distance(DISTANCE_ALGORITHM.SPHERICAL, dp);
+        double cylindrical = get_distance(DISTANCE_ALGORITHM.CYLINDRICAL, dp);
         List<ITextComponent> res = new ArrayList<>();
         res.add(Messenger.m(null,
                 "w Distance between ",Messenger.tp("b",pos1),"w and ",Messenger.tp("b",pos2),"w :"));
