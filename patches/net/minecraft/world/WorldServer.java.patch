@@ -1,0 +1,361 @@
+--- ../src-base/minecraft/net/minecraft/world/WorldServer.java
++++ ../src-work/minecraft/net/minecraft/world/WorldServer.java
+@@ -14,7 +14,6 @@
+ import java.util.Set;
+ import java.util.TreeSet;
+ import java.util.UUID;
+-import java.util.function.Predicate;
+ import java.util.stream.Collectors;
+ import javax.annotation.Nullable;
+ import net.minecraft.advancements.AdvancementManager;
+@@ -60,6 +59,7 @@
+ import net.minecraft.util.math.ChunkPos;
+ import net.minecraft.util.math.MathHelper;
+ import net.minecraft.util.math.Vec3d;
++import net.minecraft.util.text.ITextComponent;
+ import net.minecraft.village.VillageCollection;
+ import net.minecraft.village.VillageSiege;
+ import net.minecraft.world.biome.Biome;
+@@ -80,14 +80,22 @@
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
++import carpet.CarpetSettings;
++import carpet.helpers.RandomTickOptimization;
++import carpet.helpers.TickSpeed;
++import carpet.logging.LoggerRegistry;
++import carpet.utils.CarpetProfiler;
++import carpet.utils.Messenger;
++import carpet.utils.Waypoint;
++
+ public class WorldServer extends World implements IThreadListener
+ {
+     private static final Logger field_147491_a = LogManager.getLogger();
+     private final MinecraftServer field_73061_a;
+     private final EntityTracker field_73062_L;
+-    private final PlayerChunkMap field_73063_M;
+-    private final Set<NextTickListEntry> field_73064_N = Sets.<NextTickListEntry>newHashSet();
+-    private final TreeSet<NextTickListEntry> field_73065_O = new TreeSet<NextTickListEntry>();
++    public final PlayerChunkMap field_73063_M;
++    public final Set<NextTickListEntry> field_73064_N = Sets.<NextTickListEntry>newHashSet(); // CM: made public for doubleTileTickSchedulingFix
++    public final TreeSet<NextTickListEntry> field_73065_O = new TreeSet<NextTickListEntry>(); // CM: made public for doubleTileTickSchedulingFix
+     private final Map<UUID, Entity> field_175741_N = Maps.<UUID, Entity>newHashMap();
+     public boolean field_73058_d;
+     private boolean field_73068_P;
+@@ -99,6 +107,11 @@
+     private int field_147489_T;
+     private final List<NextTickListEntry> field_94579_S = Lists.<NextTickListEntry>newArrayList();
+ 
++    // Carpet waypoints
++    public Map<String, Waypoint> waypoints;
++    // [CM] Piston ghost blocks fix
++    public boolean blockActionsProcessed;
++
+     public WorldServer(MinecraftServer p_i45921_1_, ISaveHandler p_i45921_2_, WorldInfo p_i45921_3_, int p_i45921_4_, Profiler p_i45921_5_)
+     {
+         super(p_i45921_2_, p_i45921_3_, DimensionType.func_186069_a(p_i45921_4_).func_186070_d(), p_i45921_5_, false);
+@@ -164,6 +177,9 @@
+ 
+     public void func_72835_b()
+     {
++        // [CM] Piston ghost blocks fix
++        this.blockActionsProcessed = false;
++        
+         super.func_72835_b();
+ 
+         if (this.func_72912_H().func_76093_s() && this.func_175659_aa() != EnumDifficulty.HARD)
+@@ -184,12 +200,19 @@
+             this.func_73053_d();
+         }
+ 
++        String world_name = this.field_73011_w.func_186058_p().func_186065_b();
++        if (TickSpeed.process_entities)
++        {// extra indent
++
+         this.field_72984_F.func_76320_a("mobSpawner");
++        CarpetProfiler.start_section(world_name, "spawning");
+ 
+         if (this.func_82736_K().func_82766_b("doMobSpawning") && this.field_72986_A.func_76067_t() != WorldType.field_180272_g)
+         {
+             this.field_175742_R.func_77192_a(this, this.field_72985_G, this.field_72992_H, this.field_72986_A.func_82573_f() % 400L == 0L);
+         }
++        CarpetProfiler.end_current_section();
++        }//end indent
+ 
+         this.field_72984_F.func_76318_c("chunkSource");
+         this.field_73020_y.func_73156_b();
+@@ -200,26 +223,66 @@
+             this.func_175692_b(j);
+         }
+ 
++        if (TickSpeed.process_entities)
++        { // CM extra indent
+         this.field_72986_A.func_82572_b(this.field_72986_A.func_82573_f() + 1L);
+ 
+         if (this.func_82736_K().func_82766_b("doDaylightCycle"))
+         {
+             this.field_72986_A.func_76068_b(this.field_72986_A.func_76073_f() + 1L);
+         }
+-
+         this.field_72984_F.func_76318_c("tickPending");
+-        this.func_72955_a(false);
++
++        CarpetProfiler.start_section(world_name, "blocks");
++        
++		this.func_72955_a(false);
++
++		if(LoggerRegistry.__rng){
++            LoggerRegistry.getLogger("rng").log(() -> new ITextComponent[] {
++                    Messenger.s(null, String.format("RNG TickUp. t:%d seed:%d d:%s", field_73061_a.func_71259_af(), getRandSeed(), field_73011_w.func_186058_p().name()))
++            });
++        }
++		if(CarpetSettings.setSeed != 0){
++        	this.field_73012_v.setSeed(CarpetSettings.setSeed ^ 0x5DEECE66DL);
++        }
++		
++		CarpetProfiler.end_current_section();
++		
++		}
++		CarpetProfiler.start_section(world_name, "blocks");
+         this.field_72984_F.func_76318_c("tickBlocks");
+         this.func_147456_g();
++        CarpetProfiler.end_current_section();
+         this.field_72984_F.func_76318_c("chunkMap");
+         this.field_73063_M.func_72693_b();
++
++        if (TickSpeed.process_entities)
++        { // CM indent
+         this.field_72984_F.func_76318_c("village");
+         this.field_72982_D.func_75544_a();
+         this.field_175740_d.func_75528_a();
+         this.field_72984_F.func_76318_c("portalForcer");
+         this.field_85177_Q.func_85189_a(this.func_82737_E());
++		}
++		
++		// NewLight PHIPRO-CARPET
++		if (CarpetSettings.newLight)
++        {
++            this.field_72984_F.func_76318_c("lighting");
++            this.lightingEngine.procLightUpdates();
++        }
+         this.field_72984_F.func_76319_b();
++
+         this.func_147488_Z();
++
++        if(LoggerRegistry.__rng){
++            LoggerRegistry.getLogger("rng").log(() -> new ITextComponent[] {
++                    Messenger.s(null, String.format("RNG BlockEv. t:%d seed:%d d:%s", field_73061_a.func_71259_af(), getRandSeed(), field_73011_w.func_186058_p().name()))
++            });
++        }
++        if(CarpetSettings.setSeed != 0){
++        	this.field_73012_v.setSeed(CarpetSettings.setSeed ^ 0x5DEECE66DL);
++        }
+     }
+ 
+     @Nullable
+@@ -255,8 +318,15 @@
+                     ++j;
+                 }
+             }
+-
+-            this.field_73068_P = j > 0 && j >= this.field_73010_i.size() - i;
++            int sleepingThreshold = CarpetSettings.sleepingThreshold;
++            if(sleepingThreshold < 100)
++            { // custom amount
++                field_73068_P = j > 0;
++            }
++            else
++            { // vanilla - all
++                field_73068_P = j > 0 && j >= this.field_73010_i.size() - i;
++            }
+         }
+     }
+ 
+@@ -287,6 +357,28 @@
+     {
+         if (this.field_73068_P && !this.field_72995_K)
+         {
++            //CM sleeping
++            int sleepingThreshold = CarpetSettings.sleepingThreshold;
++            if(sleepingThreshold < 100)
++            {
++                float numberOfPlayers = 0;
++                float sleepingPlayerCount = 0;
++
++                for (EntityPlayer entityplayer : this.field_73010_i)
++                {
++                    if (!entityplayer.func_175149_v())
++                    {
++                        numberOfPlayers++;
++                        if (entityplayer.func_71026_bH())
++                        {
++                            sleepingPlayerCount++;
++                        }
++                    }
++                }
++                return sleepingThreshold <= (int) ((sleepingPlayerCount / numberOfPlayers) * 100);
++            }
++            //CM end
++            // Vanilla
+             for (EntityPlayer entityplayer : this.field_73010_i)
+             {
+                 if (!entityplayer.func_175149_v() && !entityplayer.func_71026_bH())
+@@ -303,7 +395,7 @@
+         }
+     }
+ 
+-    protected boolean func_175680_a(int p_175680_1_, int p_175680_2_, boolean p_175680_3_)
++    public boolean func_175680_a(int p_175680_1_, int p_175680_2_, boolean p_175680_3_)
+     {
+         return this.func_72863_F().func_73149_a(p_175680_1_, p_175680_2_);
+     }
+@@ -344,6 +436,7 @@
+             boolean flag = this.func_72896_J();
+             boolean flag1 = this.func_72911_I();
+             this.field_72984_F.func_76320_a("pollingChunks");
++            boolean overworldIceOnly = !CarpetSettings.enableStableLCGNetherEnd || field_73011_w.func_186058_p().func_186068_a() == 0; // Rule to disable nether and end ice snow and lightning Carpet-XCOM
+ 
+             for (Iterator<Chunk> iterator = this.field_73063_M.func_187300_b(); iterator.hasNext(); this.field_72984_F.func_76319_b())
+             {
+@@ -355,9 +448,14 @@
+                 chunk.func_76594_o();
+                 this.field_72984_F.func_76318_c("tickChunk");
+                 chunk.func_150804_b(false);
++                if (!TickSpeed.process_entities)
++                { // skipping the rest of the block processing
++                    this.field_72984_F.func_76319_b();
++                    continue;
++                }
+                 this.field_72984_F.func_76318_c("thunder");
+ 
+-                if (flag && flag1 && this.field_73012_v.nextInt(100000) == 0)
++                if (overworldIceOnly && flag && flag1 && this.field_73012_v.nextInt(100000) == 0)
+                 {
+                     this.field_73005_l = this.field_73005_l * 3 + 1013904223;
+                     int l = this.field_73005_l >> 2;
+@@ -385,7 +483,7 @@
+ 
+                 this.field_72984_F.func_76318_c("iceandsnow");
+ 
+-                if (this.field_73012_v.nextInt(16) == 0)
++                if (overworldIceOnly && this.field_73012_v.nextInt(16) == 0)
+                 {
+                     this.field_73005_l = this.field_73005_l * 3 + 1013904223;
+                     int j2 = this.field_73005_l >> 2;
+@@ -443,7 +541,7 @@
+         }
+     }
+ 
+-    protected BlockPos func_175736_a(BlockPos p_175736_1_)
++    public BlockPos func_175736_a(BlockPos p_175736_1_)
+     {
+         BlockPos blockpos = this.func_175725_q(p_175736_1_);
+         AxisAlignedBB axisalignedbb = (new AxisAlignedBB(blockpos, new BlockPos(blockpos.func_177958_n(), this.func_72800_K(), blockpos.func_177952_p()))).func_186662_g(3.0D);
+@@ -503,9 +601,10 @@
+                     {
+                         iblockstate.func_177230_c().func_180650_b(this, p_175654_1_, iblockstate, this.field_73012_v);
+                     }
++                    if(RandomTickOptimization.needsWorldGenFix) return;
+                 }
+ 
+-                return;
++                if(!RandomTickOptimization.needsWorldGenFix) return;
+             }
+ 
+             p_175654_3_ = 1;
+@@ -644,9 +743,18 @@
+             }
+             else
+             {
+-                if (i > 65536)
++                int tileTickLimit = CarpetSettings.tileTickLimit;
++                if (tileTickLimit >= 0 && i > tileTickLimit)
+                 {
+-                    i = 65536;
++                    if (LoggerRegistry.__tileTickLimit) {
++                        final int fi = i;
++                        LoggerRegistry.getLogger("tileTickLimit").log(() -> new ITextComponent[] {
++                            Messenger.s(null, String.format("Reached tile tick limit (%d > %d)", fi, tileTickLimit))
++                        },
++                        "NUMBER", i,
++                        "LIMIT", tileTickLimit);
++                    }
++                    i = tileTickLimit;
+                 }
+ 
+                 this.field_72984_F.func_76320_a("cleaning");
+@@ -677,6 +785,8 @@
+ 
+                     if (this.func_175707_a(nextticklistentry1.field_180282_a.func_177982_a(0, 0, 0), nextticklistentry1.field_180282_a.func_177982_a(0, 0, 0)))
+                     {
++                        if (carpet.carpetclient.CarpetClientChunkLogger.logger.enabled)
++                            carpet.carpetclient.CarpetClientChunkLogger.setReason("Block update: " + nextticklistentry1.func_151351_a().func_149732_F());
+                         IBlockState iblockstate = this.func_180495_p(nextticklistentry1.field_180282_a);
+ 
+                         if (iblockstate.func_185904_a() != Material.field_151579_a && Block.func_149680_a(iblockstate.func_177230_c(), nextticklistentry1.func_151351_a()))
+@@ -699,6 +809,7 @@
+                         this.func_175684_a(nextticklistentry1.field_180282_a, nextticklistentry1.func_151351_a(), 0);
+                     }
+                 }
++                carpet.carpetclient.CarpetClientChunkLogger.resetReason();
+ 
+                 this.field_72984_F.func_76319_b();
+                 this.field_94579_S.clear();
+@@ -950,11 +1061,18 @@
+ 
+             chunkproviderserver.func_186027_a(p_73044_1_);
+ 
++            if (CarpetSettings.simulatePermaloader) chunkproviderserver.fakePermaloaderProtected = true;
+             for (Chunk chunk : Lists.newArrayList(chunkproviderserver.func_189548_a()))
+             {
+-                if (chunk != null && !this.field_73063_M.func_152621_a(chunk.field_76635_g, chunk.field_76647_h))
++                if (chunk != null /*&& !this.playerChunkMap.contains(chunk.x, chunk.z)*/) // CM: moved test to below
+                 {
++                    if (!this.field_73063_M.func_152621_a(chunk.field_76635_g, chunk.field_76647_h))
+                     chunkproviderserver.func_189549_a(chunk);
++                    else if (CarpetSettings.whereToChunkSavestate.canUnloadNearPlayers)
++                    {
++                        chunkproviderserver.func_189549_a(chunk);
++                        chunk.field_189550_d = false;
++                    }
+                 }
+             }
+         }
+@@ -1055,6 +1173,7 @@
+         this.field_175729_l.func_76038_a(p_72923_1_.func_145782_y(), p_72923_1_);
+         this.field_175741_N.put(p_72923_1_.func_110124_au(), p_72923_1_);
+         Entity[] aentity = p_72923_1_.func_70021_al();
++        p_72923_1_.postLoad();
+ 
+         if (aentity != null)
+         {
+@@ -1150,14 +1269,19 @@
+ 
+             for (BlockEventData blockeventdata : this.field_147490_S[i])
+             {
++                if(carpet.carpetclient.CarpetClientChunkLogger.logger.enabled)
++                    carpet.carpetclient.CarpetClientChunkLogger.setReason("Queued block event: " + blockeventdata.func_151337_f().func_176223_P());
+                 if (this.func_147485_a(blockeventdata))
+                 {
+                     this.field_73061_a.func_184103_al().func_148543_a((EntityPlayer)null, (double)blockeventdata.func_180328_a().func_177958_n(), (double)blockeventdata.func_180328_a().func_177956_o(), (double)blockeventdata.func_180328_a().func_177952_p(), 64.0D, this.field_73011_w.func_186058_p().func_186068_a(), new SPacketBlockAction(blockeventdata.func_180328_a(), blockeventdata.func_151337_f(), blockeventdata.func_151339_d(), blockeventdata.func_151338_e()));
+                 }
+             }
++            carpet.carpetclient.CarpetClientChunkLogger.resetReason();
+ 
+             this.field_147490_S[i].clear();
+         }
++        // [CM] Piston ghost blocks fix
++        this.blockActionsProcessed = true;
+     }
+ 
+     private boolean func_147485_a(BlockEventData p_147485_1_)
+@@ -1299,4 +1423,9 @@
+             {
+             }
+         }
++    
++    public boolean haveBlockActionsProcessed()
++    {
++        return this.blockActionsProcessed;
++    }
+ }

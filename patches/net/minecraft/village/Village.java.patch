@@ -1,0 +1,19 @@
+--- ../src-base/minecraft/net/minecraft/village/Village.java
++++ ../src-work/minecraft/net/minecraft/village/Village.java
+@@ -368,6 +368,7 @@
+                 flag = true;
+                 villagedoorinfo.func_179853_a(true);
+                 iterator.remove();
++                VillageCollection.updateMarkers = true;
+             }
+         }
+ 
+@@ -379,7 +380,7 @@
+ 
+     private boolean func_179860_f(BlockPos p_179860_1_)
+     {
+-        IBlockState iblockstate = this.field_75586_a.func_180495_p(p_179860_1_);
++        IBlockState iblockstate = this.field_75586_a.getBlockState(p_179860_1_, "Village loading");
+         Block block = iblockstate.func_177230_c();
+ 
+         if (block instanceof BlockDoor)
