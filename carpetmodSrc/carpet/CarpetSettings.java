@@ -63,6 +63,9 @@ public class CarpetSettings
     @Rule(desc = "Habilita /center para calcular ell centro de un perimetro desde 2 esquinas.", category = COMMANDS)
     public static boolean commandCenter = false;
 
+    @Rule(desc = "Si una entidad muere sobre arena en llamas, la arena se convertira en soulsand", category = {FEATURE, EXPERIMENTAL})
+    public static boolean mobInFireConvertsSandToSoulsand = false;
+
     @Rule(desc = "Enables /spawn command for spawn tracking", category = COMMANDS)
     public static boolean commandSpawn = true;
 
