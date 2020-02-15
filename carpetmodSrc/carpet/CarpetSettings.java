@@ -65,6 +65,9 @@ public class CarpetSettings
     //enables /center to calculate the center of a perimeter
     public static boolean commandCenter = false;
 
+    @Rule(desc = "returns the area to fill for moving an end gateway.", category = {FEATURE, EXPERIMENTAL})
+    public static boolean commandGateway = false;
+
     @Rule(desc = "Si una entidad muere sobre arena en llamas, la arena se convertira en soulsand", category = {FEATURE, EXPERIMENTAL})
     public static boolean mobInFireConvertsSandToSoulsand = false;
 
