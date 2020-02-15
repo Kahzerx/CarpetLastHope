@@ -131,7 +131,26 @@
  
                  boolean flag2 = !flag || p_70097_2_ > 0.0F;
  
-@@ -1345,6 +1382,7 @@
+@@ -1145,6 +1182,18 @@
+     {
+         if (!this.field_70729_aU)
+         {
++            if (CarpetSettings.mobInFireConvertsSandToSoulsand) {
++                BlockPos pos = new BlockPos(this.field_70165_t, this.field_70163_u, this.field_70161_v);
++                IBlockState statePos = this.field_70170_p.func_180495_p(pos);
++
++                BlockPos below = pos.func_177977_b();
++                IBlockState stateBelow = this.field_70170_p.func_180495_p(below);
++
++                if (statePos.func_177230_c() == Blocks.field_150480_ab && stateBelow.func_177230_c() == Blocks.field_150354_m)
++                {
++                    this.field_70170_p.func_175656_a(below, Blocks.field_150425_aM.func_176223_P());
++                }
++            }
+             Entity entity = p_70645_1_.func_76346_g();
+             EntityLivingBase entitylivingbase = this.func_94060_bK();
+ 
+@@ -1345,6 +1394,7 @@
                  int i = (this.func_70660_b(MobEffects.field_76429_m).func_76458_c() + 1) * 5;
                  int j = 25 - i;
                  float f = p_70672_2_ * (float)j;
@@ -139,7 +158,7 @@
                  p_70672_2_ = f / 25.0F;
              }
  
-@@ -1358,7 +1396,10 @@
+@@ -1358,7 +1408,10 @@
  
                  if (k > 0)
                  {
@@ -150,7 +169,7 @@
                  }
  
                  return p_70672_2_;
-@@ -1370,15 +1411,21 @@
+@@ -1370,15 +1423,21 @@
      {
          if (!this.func_180431_b(p_70665_1_))
          {
@@ -172,7 +191,7 @@
                  this.func_70606_j(f1 - p_70665_2_);
                  this.func_110142_aN().func_94547_a(p_70665_1_, f1, p_70665_2_);
                  this.func_110149_m(this.func_110139_bj() - p_70665_2_);
-@@ -1828,7 +1875,10 @@
+@@ -1828,7 +1887,10 @@
                              }
                          }
  
@@ -183,7 +202,7 @@
  
                          if (this.field_70123_F && this.func_70617_f_())
                          {
-@@ -2306,6 +2356,9 @@
+@@ -2306,6 +2368,9 @@
  
      protected void func_85033_bc()
      {
@@ -193,7 +212,7 @@
          List<Entity> list = this.field_70170_p.func_175674_a(this, this.func_174813_aQ(), EntitySelectors.func_188442_a(this));
  
          if (!list.isEmpty())
-@@ -2330,8 +2383,13 @@
+@@ -2330,8 +2395,13 @@
                  }
              }
  
@@ -208,7 +227,7 @@
                  Entity entity = list.get(l);
                  this.func_82167_n(entity);
              }
-@@ -2366,6 +2424,11 @@
+@@ -2366,6 +2436,11 @@
      {
          this.field_70703_bu = p_70637_1_;
      }
