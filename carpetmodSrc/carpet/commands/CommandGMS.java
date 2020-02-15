@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
@@ -53,11 +52,17 @@ public class CommandGMS extends CommandCarpetBase
         }
         else
         {
-            GameType gametype = GameType.parseGameTypeWithDefault("survival", GameType.NOT_SET);
-            EntityPlayer entityplayer = getCommandSenderAsPlayer(sender);
+            EntityPlayerMP entityplayer = getCommandSenderAsPlayer(sender);
+            setPlayerToSurvival(server, entityplayer);
+        }
+    }
+
+    public static void setPlayerToSurvival(MinecraftServer server, EntityPlayerMP entityplayer) {
+        GameType gametype = server.getGameType();
+        if(entityplayer.interactionManager.getGameType() != GameType.SURVIVAL) {
+            if (entityplayer instanceof EntityPlayerMP) entityplayer.moveToStoredCameraData();
             entityplayer.setGameType(gametype);
             entityplayer.removePotionEffect(Potion.getPotionFromResourceLocation("night_vision"));
-            if(entityplayer instanceof EntityPlayerMP)((EntityPlayerMP)entityplayer).moveToStoredCameraData();
         }
     }
 
@@ -65,5 +70,6 @@ public class CommandGMS extends CommandCarpetBase
     {
         return Collections.<String>emptyList();
     }
+
 
 }
