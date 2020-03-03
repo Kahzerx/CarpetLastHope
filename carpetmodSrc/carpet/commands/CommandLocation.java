@@ -5,6 +5,8 @@ import carpet.utils.Waypoint;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
@@ -48,6 +50,8 @@ public class CommandLocation extends CommandCarpetBase
         int player_z = player.getPosition().getZ();
 
         sender.sendMessage(new TextComponentString(getDimensionWithColor(player) + " " + TextFormatting.WHITE + player.getName() + " está en " + player_x + " " + player_y + " " + player_z + " " + calculaPosicion(player)));
+        PotionEffect potioneffect = new PotionEffect(Potion.getPotionFromResourceLocation("glowing"), 100, 0, false, false);
+        player.addPotionEffect(potioneffect);
     }
 
     @Override
