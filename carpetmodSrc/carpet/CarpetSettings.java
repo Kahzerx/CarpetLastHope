@@ -44,7 +44,7 @@ public class CarpetSettings
     public static boolean locked = false;
 
     // TODO: replace these constants at build time
-    public static final String carpetVersion = "v20_02_13";
+    public static final String carpetVersion = "v20_04_13";
     public static final String minecraftVersion = "1.12.2";
     public static final String mcpMappings = "39-1.12";
 
@@ -57,16 +57,12 @@ public class CarpetSettings
      * Rules in this category should start with the "command" prefix
      */
 
+
     @Rule(desc = "Activa /location para localizar jugadores y jugadores en zonas.", category = COMMANDS)
-    //Enables /location to locate players
     public static boolean commandLocation = true;
 
-    @Rule(desc = "Habilita /center para calcular el centro de un perimetro desde 2 esquinas.", category = COMMANDS)
-    //enables /center to calculate the center of a perimeter
+    @Rule(desc = "Habilita /center para calcular ell centro de un perimetro desde 2 esquinas.", category = COMMANDS)
     public static boolean commandCenter = false;
-
-    @Rule(desc = "Enables /gateway command to calculate end gateway area.", category = {FEATURE, EXPERIMENTAL})
-    public static boolean commandGateway = false;
 
     @Rule(desc = "Si una entidad muere sobre arena en llamas, la arena se convertira en soulsand", category = {FEATURE, EXPERIMENTAL})
     public static boolean mobInFireConvertsSandToSoulsand = false;
@@ -76,6 +72,11 @@ public class CarpetSettings
 
     @Rule(desc = "convierte la red sand en un recurso renovable si un anvil cae sobre terracotta naranja", category = {FEATURE, EXPERIMENTAL})
     public static boolean renewableRedSand = false;
+
+    @Rule(desc = "Enables /gateway command to calculate end gateway area.", category = {FEATURE, EXPERIMENTAL})
+    public static boolean commandGateway = false;
+
+
 
     @Rule(desc = "Enables /grow command for growing plants", category = COMMANDS)
     public static boolean commandGrow = true;
@@ -141,6 +142,9 @@ public class CarpetSettings
 
     @Rule(desc = "Allows the use of scoreboardPublic, a lower permition level score display.", category = COMMANDS)
     public static boolean commandPublicScoreboard = true;
+
+    @Rule(desc = "Enables /light for changing light levels", category = COMMANDS)
+    public static boolean commandLight = true;
 
     @Rule(desc = "Disables players in /c from spectating other players", category = COMMANDS)
     public static boolean cameraModeDisableSpectatePlayers;
@@ -259,6 +263,12 @@ public class CarpetSettings
     @CreativeDefault
     @SurvivalDefault
     public static boolean hopperCounters = false;
+
+    @Rule(desc = "Items thrown into a cactus will count items that are destroyed in them.", category = {COMMANDS, CREATIVE, SURVIVAL}, extra = {
+    })
+    @CreativeDefault
+    @SurvivalDefault
+    public static boolean cactusCounter = false;
 
     @Rule(desc = "Enables integration with redstone multimeter mod", category = {CREATIVE, SURVIVAL}, validator = "validateRedstoneMultimeter", extra = {
             "Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"
@@ -448,6 +458,28 @@ public class CarpetSettings
      * Rules in this category should end with the "Fix" suffix
      */
 
+    @Rule(desc = "Saves the block event on server shutdown and loads at server startup.", category = FIX, validator = "validateBlockEventSerializer")
+    public static boolean blockEventSerializer;
+    private static boolean validateBlockEventSerializer(boolean value) {
+        if (!value){
+            for (int dim = 0; dim < 3; dim++) {
+                WorldServer world = CarpetServer.minecraft_server.worlds[dim];
+                world.blockEventSerializer.markDirty();
+            }
+        }
+
+        return true;
+    }
+
+    @Rule(desc = "Removes the timeout caused by delays attempting to login.", category = FIX)
+    public static boolean removeConnectionTimeout;
+
+    @Rule(desc = "Villagers drop there inventory contents when they die.", category = FIX)
+    public static boolean villagerInventoryDropFix;
+
+    @Rule(desc = "Optimizes tile entity removal from the world.", category = OPTIMIZATIONS)
+    public static boolean optimizedTileEntityRemoval;
+
     @Rule(desc = "Optimizes TNT movement when using cannons.", category = OPTIMIZATIONS)
     public static boolean TNTmovementOptimization = false;
 
@@ -462,9 +494,6 @@ public class CarpetSettings
 
     @Rule(desc = "Disables the packet limit that causes the book banning.", category = FIX)
     public static boolean disableBookBan;
-
-    @Rule(desc = "Rule made to debug recipes by pasting all recipes when crafting.", category = FIX)
-    public static boolean debugRecipes;
 
     @Rule(desc = "Fixes the collision cancelation lag when mobs are inside ladders and vines.", category = FIX)
     @BugFixDefault
@@ -692,32 +721,41 @@ public class CarpetSettings
     @Rule(desc = "Fixes updates suppression causing server crashes.", category = FIX)
     public static boolean updateSuppressionCrashFix;
 
-    @Rule(desc = "Fixes double tile tick scheduling", category = FIX, validator = "validateDoubleTileTickSchedulingFix")
+    @Rule(desc = "Fixes double tile tick scheduling", category = FIX)
     public static boolean doubleTileTickSchedulingFix = false;
-    private static boolean validateDoubleTileTickSchedulingFix(boolean value) {
-        if (CarpetServer.minecraft_server.worlds == null)
-            return true;
-        @SuppressWarnings("unchecked")
-        ArrayList<NextTickListEntry>[] tileTicks = new ArrayList[3];
-        for (int dim = 0; dim < 3; dim++) {
-            WorldServer world = CarpetServer.minecraft_server.worlds[dim];
-            tileTicks[dim] = new ArrayList<>(world.pendingTickListEntriesHashSet);
-            world.pendingTickListEntriesHashSet.clear();
-            world.pendingTickListEntriesTreeSet.clear();
-        }
-        doubleTileTickSchedulingFix = value; // set this early
-        for (int dim = 0; dim < 3; dim++) {
-            WorldServer world = CarpetServer.minecraft_server.worlds[dim];
-            world.pendingTickListEntriesHashSet.addAll(tileTicks[dim]);
-            world.pendingTickListEntriesTreeSet.addAll(tileTicks[dim]);
-        }
-        return true;
-    }
+//    private static boolean validateDoubleTileTickSchedulingFix(boolean value) {
+//        if (CarpetServer.minecraft_server.worlds == null)
+//            return true;
+//        @SuppressWarnings("unchecked")
+//        ArrayList<NextTickListEntry>[] tileTicks = new ArrayList[3];
+//        for (int dim = 0; dim < 3; dim++) {
+//            WorldServer world = CarpetServer.minecraft_server.worlds[dim];
+//            tileTicks[dim] = new ArrayList<>(world.pendingTickListEntriesHashSet);
+//            world.pendingTickListEntriesHashSet.clear();
+//            world.pendingTickListEntriesTreeSet.clear();
+//        }
+//        doubleTileTickSchedulingFix = value; // set this early
+//        for (int dim = 0; dim < 3; dim++) {
+//            WorldServer world = CarpetServer.minecraft_server.worlds[dim];
+//            world.pendingTickListEntriesHashSet.addAll(tileTicks[dim]);
+//            world.pendingTickListEntriesTreeSet.addAll(tileTicks[dim]);
+//        }
+//        return true;
+//    }
 
     @Rule(desc = "Fixes player position truncation causing chunks to load with one block offset to chunk boarders in negative coordinates.", category = FIX)
     public static boolean playerChunkLoadingFix = false;
 
     // ===== FEATURES ===== //
+
+    @Rule(desc = "Players drop there skulls when blown up by charged creepers.", category = FEATURE)
+    public static boolean playerSkullsByChargedCreeper = false;
+
+    @Rule(desc = "Places the mined block in the player inventory when sneaking.", category = FEATURE)
+    public static boolean carefulBreak = false;
+
+    @Rule(desc = "Combines the duration of potions when drinking out of a bottle. The combined duration capped by this carpet rule in gameticks.", options = {"0", "18000", "36000", "72000"}, category = FEATURE)
+    public static int combinePotionDuration = 0;
 
     @Rule(desc = "Allows empty shulkerboxes to stack in the player inventory.", category = FEATURE)
     public static boolean stackableShulkersPlayerInventory;
@@ -725,9 +763,15 @@ public class CarpetSettings
     @Rule(desc = "Allows fake players to gain stats.", category = FEATURE)
     public static boolean fakePlayerStats;
 
+    @Rule(desc = "Removes the skin from fake players to reduce player data requests to mojang servers.", category = FEATURE)
+    public static boolean removeFakePlayerSkins;
+
+    @Rule(desc = "Reloads fake players on server startup that were loaded before server shutdown.", category = FEATURE)
+    public static boolean reloadFakePlayers;
+
     @Rule(desc = "Turns crafting tables into automated crafting tables with inventorys.", category = FEATURE, extra = "WARNING! If the rule is turned off after use, any inventory content in crafting tables will permanently become lost after chunks are reloaded.")
     public static boolean autocrafter;
-    
+
     @Rule(
             desc = "Auto-crafting dropper",
             extra = {"Is a dropper points to the crafting table ",
@@ -869,7 +913,7 @@ public class CarpetSettings
     private static boolean validateTileTickLimit(int value) {
         return value >= -1;
     }
-    
+
     @Rule(desc = "Redstone ore blocks can redirect redstone dust", category = {EXPERIMENTAL, FEATURE})
     public static boolean redstoneOreRedirectsDust = false;
 

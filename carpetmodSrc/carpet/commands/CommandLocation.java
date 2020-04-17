@@ -2,6 +2,7 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.utils.Waypoint;
+import carpet.utils.DistanceCalculator;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;

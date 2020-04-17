@@ -65,16 +65,21 @@ public class CommandGMC extends CommandCarpetBase
             if(entityplayer.isSpectator()) return;
             if(CarpetSettings.cameraModeSurvivalRestrictions && entityplayer.isSurvival()) {
                 List<EntityMob> hostiles = sender.getEntityWorld().getEntitiesWithinAABB(EntityMob.class, new AxisAlignedBB(entityplayer.posX - 8.0D, entityplayer.posY - 5.0D, entityplayer.posZ - 8.0D, entityplayer.posX + 8.0D, entityplayer.posY + 5.0D, entityplayer.posZ + 8.0D), new EntityPlayer.SleepEnemyPredicate(entityplayer));
-                if(!entityplayer.onGround || entityplayer.isElytraFlying() || entityplayer.getFire() >= 0 || entityplayer.isInWater() || !hostiles.isEmpty()){
+                PotionEffect fireresist = entityplayer.getActivePotionEffect(Potion.getPotionFromResourceLocation("fire_resistance"));
+                if(!entityplayer.onGround || entityplayer.isElytraFlying() || (entityplayer.getFire() > 0 && (fireresist == null || fireresist.getDuration() < entityplayer.getFire())) || entityplayer.getAir() != 300 || !hostiles.isEmpty()){
                     notifyCommandListener(sender, this, "Restricted use to: on ground, not in water, not on fire, not flying/falling, not near hostile mobs.");
                     return;
                 }
             }
-            entityplayer.storeCameraData();
+            Potion nightvision = Potion.getPotionFromResourceLocation("night_vision");
+            boolean hasNightvision = entityplayer.getActivePotionEffect(nightvision) != null;
+            entityplayer.storeCameraData(hasNightvision);
             GameType gametype = GameType.parseGameTypeWithDefault("spectator", GameType.NOT_SET);
             entityplayer.setGameType(gametype);
-            PotionEffect potioneffect = new PotionEffect(Potion.getPotionFromResourceLocation("night_vision"), 999999, 0, false, false);
-            entityplayer.addPotionEffect(potioneffect);
+            if(!hasNightvision) {
+                PotionEffect potioneffect = new PotionEffect(nightvision, 999999, 0, false, false);
+                entityplayer.addPotionEffect(potioneffect);
+            }
             entityplayer.setGamemodeCamera();
         }
     }

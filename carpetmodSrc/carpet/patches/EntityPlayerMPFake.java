@@ -1,5 +1,6 @@
 package carpet.patches;
 
+import carpet.CarpetSettings;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -7,6 +8,7 @@ import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.play.server.SPacketEntityHeadLook;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketPlayerListItem;
+import net.minecraft.potion.Potion;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
@@ -38,8 +40,10 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
         GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
         if (gameprofile == null) {
+            System.out.println("* GameProfile is null!");
             UUID uuid = EntityPlayer.getUUID(new GameProfile((UUID)null, username));
             gameprofile = new GameProfile(uuid, username);
+            System.out.println("* GameProfile is created as offline mode!");
         }
         gameprofile = fixSkin(gameprofile);
         EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
@@ -49,7 +53,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         {
             WorldServer old_world = server.getWorld(instance.dimension);
             instance.dimension = dimension;
-            old_world.removeEntityDangerously(instance);
+            old_world.removeEntity(instance);
             instance.isDead = false;
             worldIn.spawnEntity(instance);
             instance.setWorld(worldIn);
@@ -71,6 +75,12 @@ public class EntityPlayerMPFake extends EntityPlayerMP
 
     public static EntityPlayerMPFake createShadow(MinecraftServer server, EntityPlayerMP player)
     {
+        if(CarpetSettings.cameraModeRestoreLocation && player.getGamemodeCamera()) {
+            GameType gametype = server.getGameType();
+            player.moveToStoredCameraData();
+            player.setGameType(gametype);
+            player.removePotionEffect(Potion.getPotionFromResourceLocation("night_vision"));
+        }
         player.getServer().getPlayerList().playerLoggedOut(player);
         player.connection.disconnect(new TextComponentTranslation("multiplayer.disconnect.duplicate_login"));
         WorldServer worldIn = server.getWorld(player.dimension);
@@ -94,6 +104,37 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         return playerShadow;
     }
 
+    public static EntityPlayerMPFake create(String username, MinecraftServer server)
+    {
+        WorldServer worldIn = server.getWorld(0);
+        PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
+        GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
+        gameprofile = fixSkin(gameprofile);
+        EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
+        server.getPlayerList().readPlayerDataFromFile(instance);
+        instance.setSetPosition(instance.posX, instance.posY, instance.posZ, instance.rotationYaw, instance.rotationPitch);
+        server.getPlayerList().initializeConnectionToPlayer(new NetworkManagerFake(EnumPacketDirection.CLIENTBOUND), instance);
+        if (instance.dimension != 0) //player was logged in in a different dimension
+        {
+            WorldServer old_world = server.getWorld(instance.dimension);
+            old_world.removeEntity(instance);
+            instance.isDead = false;
+            worldIn.spawnEntity(instance);
+            instance.setWorld(worldIn);
+            server.getPlayerList().preparePlayer(instance, old_world);
+            instance.interactionManager.setWorld(worldIn);
+        }
+        instance.setHealth(20.0F);
+        instance.isDead = false;
+        instance.stepHeight = 0.6F;
+        server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityHeadLook(instance, (byte)(instance.rotationYawHead * 256 / 360) ),instance.dimension);
+        server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityTeleport(instance),instance.dimension);
+        server.getPlayerList().serverUpdateMovingPlayer(instance);
+        instance.dataManager.set(PLAYER_MODEL_FLAG, (byte) 0x7f); // show all model layers (incl. capes)
+        createAndAddFakePlayerToTeamBot(instance);
+        return instance;
+    }
+
     private EntityPlayerMPFake(MinecraftServer server, WorldServer worldIn, GameProfile profile, PlayerInteractionManager interactionManagerIn)
     {
         super(server, worldIn, profile, interactionManagerIn);
@@ -101,7 +142,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
 
     private static GameProfile fixSkin(GameProfile gameProfile)
     {
-        if (!gameProfile.getProperties().containsKey("texture"))
+        if (!CarpetSettings.removeFakePlayerSkins && !gameProfile.getProperties().containsKey("texture"))
             return TileEntitySkull.updateGameProfile(gameProfile);
         else
             return gameProfile;
@@ -173,7 +214,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         scoreboard.addPlayerToTeam(player.getName(), "Bots");
     }
 
-    private static void removePlayerFromTeams(EntityPlayerMPFake player){
+    public static void removePlayerFromTeams(EntityPlayerMPFake player){
         Scoreboard scoreboard = player.getServer().getWorld(0).getScoreboard();
         scoreboard.removePlayerFromTeams(player.getName());
     }

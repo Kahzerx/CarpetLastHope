@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class LoggerRegistry
 {
@@ -45,6 +46,9 @@ public class LoggerRegistry
     public static boolean __instantComparators;
     public static boolean __items;
     public static boolean __rng;
+    public static boolean __recipes;
+    public static boolean __damageDebug;
+    public static boolean __invisDebug;
 
     public static void initLoggers(MinecraftServer server)
     {
@@ -62,8 +66,12 @@ public class LoggerRegistry
 
         registerLogger("tps", new Logger(server, "tps", null, null, LogHandler.HUD));
         registerLogger("packets", new Logger(server, "packets", null, null, LogHandler.HUD));
-        registerLogger("counter",new Logger(server, "counter","white", Arrays.stream(EnumDyeColor.values()).map(Object::toString).toArray(String[]::new), LogHandler.HUD));
+        registerLogger("counter",new Logger(server, "counter","white", new String[]{"cactus","white","orange","magenta","light_blue","yellow","lime","pink","gray","silver","cyan","purple","blue","brown","green","red","black"}, LogHandler.HUD));
         registerLogger("mobcaps", new Logger(server, "mobcaps", "dynamic",new String[]{"dynamic", "overworld", "nether","end"}, LogHandler.HUD));
+
+        registerDebugger("recipes", new Logger(server, "recipes", null, null, LogHandler.CHAT));
+        registerDebugger("damageDebug", new Logger(server, "damageDebug", null, null, LogHandler.CHAT));
+        registerDebugger("invisDebug", new Logger(server, "invisDebug", null, null, LogHandler.CHAT));
     }
 
     private static File getSaveFile(MinecraftServer server) { return server.getActiveAnvilConverter().getFile(server.getFolderName(), "loggerData.json"); }
@@ -159,7 +167,7 @@ public class LoggerRegistry
     /**
      * Gets the set of logger names.
      */
-    public static Set<String> getLoggerNames() { return loggerRegistry.keySet(); }
+    public static String[] getLoggerNames(int debugger) { return loggerRegistry.entrySet().stream().filter(s -> s.getValue().debuggerFilter(debugger)).map(Map.Entry::getKey).toArray(String[]::new);}
 
     /**
      * Sets a log as a default log with the specified option and handler
@@ -323,7 +331,12 @@ public class LoggerRegistry
         loggerRegistry.put(name, logger);
         setAccess(logger);
     }
-
+    /**
+     * Used to register runtime debugging logger.
+     */
+    private static void registerDebugger(String recipes, Logger recipes1) {
+        registerLogger(recipes, recipes1.asDebugger());
+    }
 
     public static void playerConnected(EntityPlayer player)
     {
@@ -342,7 +355,7 @@ public class LoggerRegistry
     {
         String playerName = player.getName();
 
-        for (String logName : LoggerRegistry.getLoggerNames()) {
+        for (String logName : LoggerRegistry.getLoggerNames(0)) {
             unsubscribePlayer(playerName, logName);
         }
     }
@@ -350,6 +363,8 @@ public class LoggerRegistry
     // ===== PRIVATE FUNCTIONS TO PREVENT CODE DUPLICATION ===== //
     private static void subscribePlayer(String playerName, String logName, String option, LogHandler handler) {
         carpet.logging.Logger log = LoggerRegistry.getLogger(logName);
+        if(log == null) return;
+
         if (option == null)
             option = log.getDefault();
 

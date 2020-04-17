@@ -1,11 +1,28 @@
 --- ../src-base/minecraft/net/minecraft/entity/item/EntityFallingBlock.java
 +++ ../src-work/minecraft/net/minecraft/entity/item/EntityFallingBlock.java
-@@ -29,7 +29,13 @@
- import net.minecraft.util.math.RayTraceResult;
+@@ -3,16 +3,15 @@
+ import com.google.common.collect.Lists;
+ import java.util.List;
+ import javax.annotation.Nullable;
+-import net.minecraft.block.Block;
+-import net.minecraft.block.BlockAnvil;
+-import net.minecraft.block.BlockFalling;
+-import net.minecraft.block.ITileEntityProvider;
++
++import net.minecraft.block.*;
+ import net.minecraft.block.material.Material;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.crash.CrashReportCategory;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.MoverType;
+ import net.minecraft.init.Blocks;
++import net.minecraft.item.EnumDyeColor;
+ import net.minecraft.item.ItemStack;
+ import net.minecraft.nbt.NBTBase;
+ import net.minecraft.nbt.NBTTagCompound;
+@@ -30,6 +29,10 @@
  import net.minecraft.util.math.Vec3d;
  import net.minecraft.world.World;
-+import net.minecraft.block.*;
-+import net.minecraft.item.EnumDyeColor;
  
 +import carpet.CarpetSettings;
 +import carpet.logging.logHelpers.TrajectoryLogHelper;
@@ -14,7 +31,7 @@
  public class EntityFallingBlock extends Entity
  {
      private IBlockState field_175132_d;
-@@ -39,9 +45,24 @@
+@@ -39,9 +42,24 @@
      private boolean field_145809_g;
      private int field_145815_h = 40;
      private float field_145816_i = 2.0F;
@@ -39,7 +56,7 @@
      public EntityFallingBlock(World p_i1706_1_)
      {
          super(p_i1706_1_);
-@@ -61,12 +82,18 @@
+@@ -61,12 +79,18 @@
          this.field_70167_r = p_i45848_4_;
          this.field_70166_s = p_i45848_6_;
          this.func_184530_a(new BlockPos(this));
@@ -58,7 +75,7 @@
  
      public void func_184530_a(BlockPos p_184530_1_)
      {
-@@ -90,6 +117,11 @@
+@@ -90,6 +114,11 @@
  
      public void func_70071_h_()
      {
@@ -70,7 +87,7 @@
          Block block = this.field_175132_d.func_177230_c();
  
          if (this.field_175132_d.func_185904_a() == Material.field_151579_a)
-@@ -124,6 +156,9 @@
+@@ -124,6 +153,9 @@
  
              this.func_70091_d(MoverType.SELF, this.field_70159_w, this.field_70181_x, this.field_70179_y);
  
@@ -80,7 +97,7 @@
              if (!this.field_70170_p.field_72995_K)
              {
                  BlockPos blockpos1 = new BlockPos(this);
-@@ -168,6 +203,32 @@
+@@ -168,6 +200,33 @@
                      this.field_70179_y *= 0.699999988079071D;
                      this.field_70181_x *= -0.5D;
  
@@ -101,6 +118,7 @@
 +                            field_70170_p.func_175718_b(2001,blockpos1.func_177977_b(),Block.func_149682_b(Blocks.field_150403_cj));
 +                        }
 +                    }
++
 +                    else if (block == Blocks.field_150467_bQ && CarpetSettings.renewableSand && this.field_70170_p.func_180495_p(new BlockPos(this.field_70165_t, this.field_70163_u - 0.6, this.field_70161_v)).func_177230_c() == Blocks.field_150347_e){
 +                        field_70170_p.func_175655_b(blockpos1.func_177977_b(), false);
 +                        field_70170_p.func_180501_a(blockpos1.func_177977_b(), Blocks.field_150354_m.func_176223_P(), 3);
