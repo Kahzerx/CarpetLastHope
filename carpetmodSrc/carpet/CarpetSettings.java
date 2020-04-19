@@ -76,7 +76,6 @@ public class CarpetSettings
     public static boolean commandGateway = false;
 
 
-
     @Rule(desc = "Enables /grow command for growing plants", category = COMMANDS)
     public static boolean commandGrow = true;
 
