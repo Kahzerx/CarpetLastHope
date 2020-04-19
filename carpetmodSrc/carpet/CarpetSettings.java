@@ -57,7 +57,6 @@ public class CarpetSettings
      * Rules in this category should start with the "command" prefix
      */
 
-
     @Rule(desc = "Activa /location para localizar jugadores y jugadores en zonas.", category = COMMANDS)
     public static boolean commandLocation = true;
 
